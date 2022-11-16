@@ -23,7 +23,8 @@ using System.Windows.Media;
 using System.Windows.Documents;
 using System.Windows.Controls.Primitives;
 using Xceed.Wpf.Toolkit.Core;
-using Microsoft.Toolkit.Mvvm.Messaging;
+//using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace Xceed.Wpf.Toolkit
 {
@@ -415,7 +416,7 @@ namespace Xceed.Wpf.Toolkit
                 Target.Selection.ApplyPropertyValue(formattingProperty, value);
                 if (formattingProperty.Name == "FontSize")
                 {
-                    Microsoft.Toolkit.Mvvm.Messaging.WeakReferenceMessenger.Default.Send(new WpfTkMessage() { PropertyName = "FontSize", FontSize = (double)value, Hash = this.Hash });
+                    WeakReferenceMessenger.Default.Send(new WpfTkMessage() { PropertyName = "FontSize", FontSize = (double)value, Hash = this.Hash });
                 }
             }
         }
