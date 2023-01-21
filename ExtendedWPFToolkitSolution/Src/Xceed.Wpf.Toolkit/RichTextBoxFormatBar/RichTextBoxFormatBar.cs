@@ -416,7 +416,7 @@ namespace Xceed.Wpf.Toolkit
                 Target.Selection.ApplyPropertyValue(formattingProperty, value);
                 if (formattingProperty.Name == "FontSize")
                 {
-                    WeakReferenceMessenger.Default.Send(new WpfTkMessage() { PropertyName = "FontSize", FontSize = (double)value, Hash = this.Hash });
+                    /*WeakReferenceMessenger.Default*/StrongReferenceMessenger.Default.Send(new WpfTkMessage() { PropertyName = "FontSize", FontSize = (double)value, Hash = this.Hash });
                 }
             }
         }

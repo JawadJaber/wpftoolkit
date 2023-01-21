@@ -20,6 +20,7 @@ using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Documents;
+using StdHelpers;
 
 namespace Xceed.Wpf.Toolkit
 {
@@ -51,15 +52,20 @@ namespace Xceed.Wpf.Toolkit
                 else
                 {
                     TextRange tr = new TextRange(document.ContentStart, document.ContentEnd);
-                    using (MemoryStream ms = new MemoryStream(Encoding.ASCII.GetBytes(text)))
+
+                    var sb = new StringBuilder();
+                    sb.Append(text);
+                    sb.Replace("&", "&amp;");
+
+                    using (MemoryStream ms = new MemoryStream(Encoding.ASCII.GetBytes(sb.ToString())))
                     {
                         try
                         {
                             tr.Load(ms, DataFormats.Xaml);
                         }
-                        catch (System.Windows.Markup.XamlParseException)
+                        catch (System.Windows.Markup.XamlParseException ex)
                         {
-
+                            StdHelpers.StdHelpersLogger.WriteLog(ex.ToSummery());
                             tr.Load(ms, DataFormats.Text);
                         }
 
