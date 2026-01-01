@@ -20,6 +20,7 @@ using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Documents;
+using System.Windows.Markup;
 using StdHelpers;
 
 namespace Xceed.Wpf.Toolkit
@@ -39,43 +40,104 @@ namespace Xceed.Wpf.Toolkit
             }
         }
 
-        public void SetText(System.Windows.Documents.FlowDocument document, string text)
+        //public void SetText(System.Windows.Documents.FlowDocument document, string text)
+        //{
+        //    try
+        //    {
+        //        //if the text is null/empty clear the contents of the RTB. If you were to pass a null/empty string
+        //        //to the TextRange.Load method an exception would occur.
+        //        if (String.IsNullOrEmpty(text))
+        //        {
+        //            document.Blocks.Clear();
+        //        }
+        //        else
+        //        {
+        //            TextRange tr = new TextRange(document.ContentStart, document.ContentEnd);
+
+        //            var sb = new StringBuilder();
+        //            sb.Append(text);
+        //            sb.Replace("&", "&amp;");
+
+        //            using (MemoryStream ms = new MemoryStream(Encoding.ASCII.GetBytes(sb.ToString())))
+        //            {
+        //                try
+        //                {
+        //                    tr.Load(ms, DataFormats.Xaml);
+        //                }
+        //                catch (System.Windows.Markup.XamlParseException ex)
+        //                {
+        //                    StdHelpers.StdHelpersLogger.WriteLog(ex.ToSummery());
+        //                    tr.Load(ms, DataFormats.Text);
+        //                }
+
+        //            }
+        //        }
+        //    }
+        //    catch
+        //    {
+        //        throw new InvalidDataException("Data provided is not in the correct Xaml format.");
+        //    }
+        //}
+
+        public void SetText(FlowDocument document, string text)
         {
+            if (document == null) throw new ArgumentNullException(nameof(document));
+
             try
             {
-                //if the text is null/empty clear the contents of the RTB. If you were to pass a null/empty string
-                //to the TextRange.Load method an exception would occur.
-                if (String.IsNullOrEmpty(text))
+                if (string.IsNullOrEmpty(text))
                 {
                     document.Blocks.Clear();
+                    return;
                 }
-                else
+
+                TextRange tr = new TextRange(document.ContentStart, document.ContentEnd);
+
+                // Do NOT pre-escape (& -> &amp;) here; let the chosen DataFormat handle it.
+                byte[] buffer = Encoding.UTF8.GetBytes(text);
+
+                using (var ms = new MemoryStream(buffer, writable: false))
                 {
-                    TextRange tr = new TextRange(document.ContentStart, document.ContentEnd);
-
-                    var sb = new StringBuilder();
-                    sb.Append(text);
-                    sb.Replace("&", "&amp;");
-
-                    using (MemoryStream ms = new MemoryStream(Encoding.ASCII.GetBytes(sb.ToString())))
+                    try
                     {
-                        try
+                        // Only attempt XAML parsing if the payload actually looks like XAML.
+                        if (LooksLikeXaml(text))
                         {
                             tr.Load(ms, DataFormats.Xaml);
                         }
-                        catch (System.Windows.Markup.XamlParseException ex)
+                        else
                         {
-                            StdHelpers.StdHelpersLogger.WriteLog(ex.ToSummery());
+                            // Treat as plain text (handles \r\n correctly).
                             tr.Load(ms, DataFormats.Text);
                         }
+                    }
+                    catch (XamlParseException ex)
+                    {
+                        // Your log call stays the same.
+                        StdHelpers.StdHelpersLogger.WriteLog(ex.ToSummery());
 
+                        // Critical: rewind before retrying with a different format.
+                        ms.Position = 0;
+                        tr.Load(ms, DataFormats.Text);
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                throw new InvalidDataException("Data provided is not in the correct Xaml format.");
+                // Preserve original exception as InnerException for diagnostics.
+                throw new InvalidDataException("Data provided is not in the correct Xaml format.", ex);
             }
+        }
+
+        private static bool LooksLikeXaml(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return false;
+            foreach (var ch in s)
+            {
+                if (!char.IsWhiteSpace(ch))
+                    return ch == '<'; // quick heuristic: XAML starts with a tag
+            }
+            return false;
         }
     }
 }
